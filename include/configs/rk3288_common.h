@@ -97,6 +97,17 @@
 	"kernel_addr_r=0x02000000\0" \
 	"ramdisk_addr_r=0x04000000\0"
 
+#define CONFIG_RANDOM_UUID
+
+/* defined in rockchip-common.h - without eth */
+#undef BOOT_TARGET_DEVICES
+/* First try to boot from SD (index 0), then eMMC (index 1 */
+#define BOOT_TARGET_DEVICES(func) \
+	func(MMC, mmc, 0) \
+	func(MMC, mmc, 1) \
+	func(PXE, pxe, na) \
+	func(DHCP, dchp, na)
+
 #include <config_distro_bootcmd.h>
 
 /* Linux fails to load the fdt if it's loaded above 256M on a Rock 2 board, so
