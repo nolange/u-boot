@@ -18,6 +18,7 @@
 #include <asm/arch/periph.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/grf_rk3288.h>
+#include <dt-bindings/clock/rk3288-cru.h>
 #include "designware.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -64,22 +65,19 @@ static int gmac_rk3288_started(struct udevice *dev)
 	grf = syscon_get_first_range(ROCKCHIP_SYSCON_GRF);
 
 	rk_clrsetreg(&grf->soc_con1,
-		     GMAC_CLK_SEL_MASK << GMAC_CLK_SEL_SHIFT,
-		     clk << GMAC_CLK_SEL_SHIFT);
+			 GMAC_CLK_SEL_MASK << GMAC_CLK_SEL_SHIFT,
+			 clk << GMAC_CLK_SEL_SHIFT);
 
 	return 0;
 }
 
-static int gmac_rk3288_probe(struct udevice *dev)
+static int gmac_rk3288_initpins(struct udevice *dev)
 {
 	int ret;
-	struct gmac_rk3288_platdata *pdata = dev_get_platdata(dev);
-	struct dw_eth_dev *priv = dev_get_priv(dev);
+	struct udevice *pinctrl;
 	enum periph_id periph_id;
-	struct udevice *pinctrl, *clk_dev;
-	struct clk clk;
-	struct rk3288_grf *grf;
 
+	/* Initialize Pinmux for GMAC */
 	ret = uclass_get_device(UCLASS_PINCTRL, 0, &pinctrl);
 	if (ret)
 		return ret;
@@ -88,19 +86,32 @@ static int gmac_rk3288_probe(struct udevice *dev)
 	if (ret < 0)
 		return ret;
 
-	periph_id = ret;
-	ret = pinctrl_request(pinctrl, periph_id, 0);
+	periph_id = (enum periph_id)ret;
+	ret = pinctrl_request_noflags(pinctrl, periph_id);
+	return ret;
+}
+
+static int gmac_rk3288_probe(struct udevice *dev)
+{
+	int ret;
+	struct gmac_rk3288_platdata *pdata = dev_get_platdata(dev);
+	struct dw_eth_dev *priv = dev_get_priv(dev);
+	struct udevice *clk_dev;
+	struct clk clk;
+	struct rk3288_grf *grf;
+
+	ret = gmac_rk3288_initpins(dev);
+    if (ret)
+        return ret;
+
+	ret = rockchip_get_clk(&clk_dev);
 	if (ret)
 		return ret;
 
-	ret = uclass_get_device(UCLASS_CLK, CLK_GENERAL, &clk_dev);
-	if (ret)
-		return ret;
-
-	clk.id = periph_id;
+	clk.id = SCLK_MAC;
 	ret = clk_request(clk_dev, &clk);
 	if (ret < 0)
-	    return ret;
+		return ret;
 
 	ret = clk_set_rate(&clk, 0);
 	clk_free(&clk);
