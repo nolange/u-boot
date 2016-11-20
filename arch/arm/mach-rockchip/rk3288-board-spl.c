@@ -113,6 +113,13 @@ static void configure_l2ctlr(void)
 	write_l2ctlr(l2ctlr);
 }
 
+void board_boot_order(u32 *spl_boot_list)
+{
+    /* This wont work on Fennec and EVC, since those define their own bootorder! */
+    spl_boot_list[0] = BOOT_DEVICE_MMC1; /* SD Card */
+    spl_boot_list[1] = BOOT_DEVICE_MMC2; /* onboard eMMC */
+}
+
 #ifdef CONFIG_SPL_MMC_SUPPORT
 static int configure_emmc(struct udevice *pinctrl)
 {
