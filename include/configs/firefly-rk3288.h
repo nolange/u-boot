@@ -14,6 +14,11 @@
 
 #include <configs/rk3288_common.h>
 
+#define CONFIG_GZIP_COMPRESSED
+#define CONFIG_BZIP2
+#define CONFIG_LZO
+#define CONFIG_LZMA
+
 #define CONFIG_LIB_RAND
 #define CONFIG_NET_RANDOM_ETHADDR
 
